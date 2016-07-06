@@ -65,6 +65,41 @@ func (this *ZlibProtocolProcessor)HandleRecv(session asio.Session)(asio.Message,
 		return nil, errors.New("packet len reading error.")
 	}
 
+	// todo 进行zip解压
+
 	return msg, nil
 }
 
+// 进行读取数据
+func (this *ZlibProtocolProcessor)HandleSend(session asio.Session, msg asio.Message) error {
+	// 检测连接状态
+	if !session.IsConnected() {
+		// todo log
+		return errors.New(fmt.Sprintf("remote disconnect,send msg fail"))
+	}
+
+	var err error
+
+	ll_msg := msg.(*LenLeadingMessage)
+
+	// todo 将源消息进行压缩
+	// zip_msg := NewLenLeadingMessage()
+
+
+	// todo 设置标记，表明已使用zip压缩
+	if false {
+		ll_msg.AddFlag(0x4000000)
+	}
+
+	// 先发送消息头
+	if _, err = session.Write(ll_msg.Header); err != nil {
+		return err
+	}
+
+	// 再发送消息体
+	if _, err = session.Write(ll_msg.Data); err != nil {
+		return err
+	}
+
+	return nil
+}

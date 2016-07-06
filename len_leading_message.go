@@ -8,6 +8,7 @@ package wgnet
 **/
 
 import (
+	"fmt"
 	proto "github.com/golang/protobuf/proto"
 )
 
@@ -15,7 +16,8 @@ import (
 const (
 	PACKET_HEADER_LEN   = 4    // 消息头的长度
 	MAX_PACKET_DATA_LEN = 1024 // 最大消息长度
-	PACKET_MASK = 0x0001FFF // 消息掩码
+	PACKET_MASK = 0x0001FFFF // 消息掩码
+	FLAGS_MASK = 0xFFFE0000 // 控制标记掩码
 )
 
 // todo 此部分可修改
@@ -42,6 +44,14 @@ func (msg *LenLeadingMessage) MessageTotalSize() uint32{
 	return uint32(PACKET_HEADER_LEN) + uint32(msg.PacketLen())
 }
 
+// 添加标记
+func (msg *LenLeadingMessage) AddFlag(flags uint32)  {
+	new_flags := msg.GetFlags()
+	new_flags = new_flags | flags
+
+	msg.Header[3] = byte(new_flags >> 8)
+	msg.Header[2] = byte(new_flags)
+}
 
 // 获取消息头信息
 func (msg *LenLeadingMessage)GetHeaderInfo() ( /*data*/ []byte, /*data len*/ uint32) {
@@ -64,11 +74,16 @@ func (msg *LenLeadingMessage) PacketLen() uint16 {
 	return GetPacketLen(msg.Header)
 }
 
+// 获取控制标记
+func (msg *LenLeadingMessage) GetFlags() uint32 {
+	val := GetUint32(msg.Header)
+	return uint32(val & FLAGS_MASK)
+}
+
 // todo 此部分可修改
 // 设置消息长度
 func (msg *LenLeadingMessage) SetPacketLen(len uint16) {
-	msg.Header[0] = byte((len >> 8) & 0xFF)
-	msg.Header[1] = byte(len & 0xFF)
+	SetUint16(msg.Header[0:], len)
 }
 
 // todo 此部分可修改
@@ -82,26 +97,28 @@ func (msg *LenLeadingMessage) ResetPacket() {
 }
 
 func GetUint32(buf []byte) uint32 {
-	val := uint32(buf[0]) << 24 |
-		uint32(buf[1]) << 16 |
-		uint32(buf[2]) << 8 |
-		uint32(buf[3])
-
+	val := uint32(buf[3]) << 24 |
+		uint32(buf[2]) << 16 |
+		uint32(buf[1]) << 8 |
+		uint32(buf[0])
+fmt.Println("GetUint32:", buf, val)
 	return val
 }
 
-// todo 此部分可修改
-func GetCMD(header []byte) uint16 {
-	return uint16(header[2]) <<8 | uint16(header[3])
-}
-// 获取消息命令号
-func (msg *LenLeadingMessage) Cmd() uint16 {
-	return GetCMD(msg.Header)
+func SetUint32(buf []byte, val uint32) {
+	buf[3] = byte(val >> 24)
+	buf[2] = byte(val >> 16)
+	buf[1] = byte(val >> 8)
+	buf[0] = byte(val)
 }
 
-func (msg *LenLeadingMessage) SetCmd(cmd uint16) {
-	msg.Header[2] = byte((cmd >> 8) & 0xFF)
-	msg.Header[3] = byte(cmd & 0xFF)
+func SetUint16(buf []byte, val uint16) {
+	buf[1] = byte(val >> 8)
+	buf[0] = byte(val)
+}
+
+func SetUint8(buf []byte, val uint8) {
+	buf[0] = byte(val)
 }
 
 func (msg *LenLeadingMessage) InitData() {

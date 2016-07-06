@@ -80,3 +80,27 @@ func (this *LenLeadingProtocolProcessor)HandleRecv(session asio.Session)(asio.Me
 	return msg, nil
 
 }
+
+// 进行读取数据
+func (this *LenLeadingProtocolProcessor)HandleSend(session asio.Session, msg asio.Message) error {
+	// 检测连接状态
+	if !session.IsConnected() {
+		// todo log
+		return errors.New(fmt.Sprintf("remote disconnect,send msg fail"))
+	}
+
+	ll_msg := msg.(*LenLeadingMessage)
+
+	var err error
+	// 先发送消息头
+	if _, err = session.Write(ll_msg.Header); err != nil {
+		return err
+	}
+
+	// 再发送消息体
+	if _, err = session.Write(ll_msg.Data); err != nil {
+		return err
+	}
+
+	return nil
+}
