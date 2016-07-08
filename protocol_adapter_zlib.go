@@ -61,6 +61,7 @@ func (this *ZlibProtocolProcessor)HandleRecv(session asio.Session)(asio.Message,
 
 	// 必须整整一个消息
 	if read_len != uint32(msg.PacketLen()) {
+		fmt.Printf("failed to read data, expecting %d got %d", msg.PacketLen(), read_len)
 		FreeLenLeadingMessage(msg)
 		return nil, errors.New("packet len reading error.")
 	}

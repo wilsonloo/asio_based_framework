@@ -8,7 +8,6 @@ package wgnet
 **/
 
 import (
-	"fmt"
 	proto "github.com/golang/protobuf/proto"
 )
 
@@ -49,8 +48,8 @@ func (msg *LenLeadingMessage) AddFlag(flags uint32)  {
 	new_flags := msg.GetFlags()
 	new_flags = new_flags | flags
 
-	msg.Header[3] = byte(new_flags >> 8)
-	msg.Header[2] = byte(new_flags)
+	msg.Header[3] = byte(new_flags >> 24)
+	msg.Header[2] = byte(new_flags >> 16)
 }
 
 // 获取消息头信息
@@ -101,7 +100,7 @@ func GetUint32(buf []byte) uint32 {
 		uint32(buf[2]) << 16 |
 		uint32(buf[1]) << 8 |
 		uint32(buf[0])
-fmt.Println("GetUint32:", buf, val)
+
 	return val
 }
 

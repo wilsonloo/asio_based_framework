@@ -32,6 +32,7 @@ func (this *LenLeadingProtocolProcessor)HandleRecv(session asio.Session)(asio.Me
 		fmt.Printf("[WgNet] failed to Recv data, session marked Disconnected, with error: %s \n", err.Error())
 		return nil, err
 	}
+	fmt.Println("ReadLenFixedData:", msg.Dump())
 
 	if uint16(read_len) != PACKET_HEADER_LEN {
 		FreeLenLeadingMessage(msg)
@@ -50,6 +51,7 @@ func (this *LenLeadingProtocolProcessor)HandleRecv(session asio.Session)(asio.Me
 	if packet_len == 0 {
 		return msg, nil
 	}
+	fmt.Println("packet len is ", packet_len)
 
 	if packet_len > MAX_PACKET_DATA_LEN {
 		FreeLenLeadingMessage(msg)
@@ -61,6 +63,7 @@ func (this *LenLeadingProtocolProcessor)HandleRecv(session asio.Session)(asio.Me
 
 	// 阻塞式写满packet数据
 	read_len, err = session.ReadLenFixedData(msg.Data[0:], uint32(len(msg.Data)))
+	fmt.Println("ReadLenFixedData data:", msg.Dump())
 
 	// 检测错误
 	if err != nil {
@@ -68,17 +71,19 @@ func (this *LenLeadingProtocolProcessor)HandleRecv(session asio.Session)(asio.Me
 			return nil, err
 		}*/
 		FreeLenLeadingMessage(msg)
+
+		fmt.Println("failed to read data:", err.Error())
 		return nil, err
 	}
 
 	// 必须整整一个消息
 	if read_len != uint32(msg.PacketLen()) {
+		fmt.Printf("failed to read data, expecting %d got %d", msg.PacketLen(), read_len)
 		FreeLenLeadingMessage(msg)
 		return nil, errors.New("packet len reading error.")
 	}
 
 	return msg, nil
-
 }
 
 // 进行读取数据
